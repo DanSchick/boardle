@@ -3,7 +3,7 @@ import { Search } from 'lucide-react';
 import { parse } from 'papaparse';
 
 
-const MechanicsHintCard = ({ matchingMechanics }) => {
+const MechanicsHintCard = ({ matchingMechanics, isCorrect }) => {
   if (!matchingMechanics || matchingMechanics.length === 0) {
     return (
       <div className="col-span-3 p-2 rounded bg-gray-800">
@@ -16,15 +16,14 @@ const MechanicsHintCard = ({ matchingMechanics }) => {
   }
 
   return (
-    <div className="col-span-3 p-2 rounded bg-green-600 text-center">
+    <div className={`col-span-3 p-2 rounded ${isCorrect ? 'bg-green-600' : 'bg-yellow-500'} text-center`}>
       <div className="text-sm">
-        <div className="font-semibold">Shared Mechanics</div>
+        <div className="font-semibold">Mechanics</div>
         <div className="flex flex-wrap gap-1 mt-1 justify-center">
           {matchingMechanics.map((mechanic, index) => (
             <div 
               key={index} 
-              variant="secondary"
-              className="px-2 py-1 rounded bg-green-700 text-white text-xs inline-block"
+              className={`px-2 py-1 rounded ${isCorrect ? 'bg-green-700' : 'bg-gray-600'} text-white text-xs inline-block`}
             >
               {mechanic}
             </div>
@@ -335,6 +334,7 @@ const Boardle = () => {
     
     const guessEmojis = guessHistory.map(guess => {
       // Create an array for regular attributes
+      const isCorrectGuess = guess.name.toLowerCase() === targetGame.name.toLowerCase();
       const attributeEmojis = [
         guess.year.match ? '🟩' : '🟨',
         guess.weight.match ? '🟩' : '🟨',
@@ -342,7 +342,7 @@ const Boardle = () => {
         guess.maxPlayers.match ? '🟩' : '🟨',
         guess.playTime.match ? '🟩' : '🟨',
         guess.category.match ? '🟩' : '🟨',
-        guess.mechanics?.length > 0 ? '🟨' : '⬛'
+        isCorrectGuess ? '🟩' : (guess.mechanics?.length > 0 ? '🟨' : '⬛')
       ];
 
       return attributeEmojis.join('');
@@ -463,7 +463,7 @@ const Boardle = () => {
                 <div className="text-sm font-semibold">Category</div>
                 <div className="text-sm">{guess.category.value} {guess.category.message}</div>
               </div>
-              <MechanicsHintCard matchingMechanics={guess.mechanics} />
+              <MechanicsHintCard matchingMechanics={guess.mechanics} isCorrect={guess.name.toLowerCase() === targetGame.name.toLowerCase()} />
             </div>
           </div>
         ))}
