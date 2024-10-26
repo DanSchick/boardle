@@ -52,7 +52,7 @@ const Boardle = () => {
   const getDateSeed = () => {
     const now = new Date();
     // Create dates using UTC to avoid timezone issues
-    const startDate = Date.UTC(2024, 10, 25, 1);
+    const startDate = Date.UTC(2024, 10, 24);
     const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
     const daysSinceStart = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
     
