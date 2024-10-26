@@ -12,6 +12,18 @@ const Boardle = () => {
   const [gameOver, setGameOver] = useState(false);
   const [gamesDb, setGamesDb] = useState({});
   const [targetGame, setTargetGame] = useState(null);
+  
+  
+  const getDateSeed = () => {
+    const now = new Date();
+    // Create dates using UTC to avoid timezone issues
+    const startDate = Date.UTC(2024, 10, 25); // UTC midnight Jan 1, 2024
+    const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const daysSinceStart = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+    
+    
+    return daysSinceStart;
+  };
 
   useEffect(() => {
     const fetchGamesData = async () => {
@@ -30,13 +42,18 @@ const Boardle = () => {
           rank: game.rank,
           maxPlayers: game.maxPlayers,
           playTime: game.playingtime,
-          category: game.category // Make sure this column exists in your CSV
+          category: game.category,
+          imageUrl: game.imagePath
         };
         return acc;
       }, {});
 
       const games = Object.entries(gamesDB);
-      const [name, data] = games[Math.floor(Math.random() * games.length)];
+      const sortedGames = games.sort(([, a], [, b]) => a.rank - b.rank);
+      const dayIndex = Math.abs(getDateSeed()) % sortedGames.length;
+      console.log("Using index:", dayIndex, "out of", sortedGames.length);
+
+      const [name, data] = sortedGames[dayIndex];
       setTargetGame({ name, ...data });
       setGamesDb(gamesDB);
     };
@@ -118,18 +135,18 @@ const Boardle = () => {
 
   const compareRank = (guessRank, targetRank) => {
     if (guessRank === targetRank) return { match: true, message: '' };
-    if (Math.abs(guessRank - targetRank) <= 10) {
+    const diff = targetRank - guessRank;
+    if (Math.abs(diff) <= 10) {
       return {
         match: false,
-        message: guessRank < targetRank ? '↑' : '↓'
+        message: diff > 0 ? '↓' : '↑' 
       };
     }
     return {
       match: false,
-      message: guessRank < targetRank ? '↑↑' : '↓↓'
+      message: diff > 0 ? '↓↓' : '↑↑' 
     };
   };
-
   const compareMaxPlayers = (guessPlayers, targetPlayers) => {
     if (guessPlayers === targetPlayers) return { match: true, message: '' };
     return {
@@ -140,16 +157,16 @@ const Boardle = () => {
 
   const comparePlayTime = (guessTime, targetTime) => {
     if (guessTime === targetTime) return { match: true, message: '' };
-    const diff = Math.abs(guessTime - targetTime);
-    if (diff <= 15) {
+    const diff = targetTime - guessTime;  // Remove Math.abs() to preserve direction
+    if (Math.abs(diff) <= 15) {  // Use Math.abs() only for threshold check
       return {
         match: false,
-        message: guessTime < targetTime ? '↑' : '↓'
+        message: diff > 0 ? '↑' : '↓'  // If target is bigger, show up arrow
       };
     }
     return {
       match: false,
-      message: guessTime < targetTime ? '↑↑' : '↓↓'
+      message: diff > 0 ? '↑↑' : '↓↓'  // If target is bigger, show double up arrow
     };
   };
 
@@ -256,7 +273,50 @@ const Boardle = () => {
     }
   };
 
+  const generateShareText = (guessHistory, targetGame, won) => {
+    const totalGuesses = guessHistory.length;
+    const emojiMap = {
+      match: '🟩',
+      close: '🟨',
+      wrong: '⬛'
+    };
+    
+    const guessEmojis = guessHistory.map(guess => {
+      return [
+        guess.year.match ? '🟩' : '🟨',
+        guess.weight.match ? '🟩' : '🟨',
+        guess.rank.match ? '🟩' : '🟨',
+        guess.maxPlayers.match ? '🟩' : '🟨',
+        guess.playTime.match ? '🟩' : '🟨',
+        guess.category.match ? '🟩' : '🟨'
+      ].join('');
+    });
+  
+    const header = `Boardle - ${won ? totalGuesses : 'X'}/6\n\n`;
+    const guessLines = guessEmojis.join('\n');
+    
+    return header + guessLines;
+  };
+  
+  // Add this function to handle sharing
+  const handleShare = () => {
+    const shareText = generateShareText(guessHistory, targetGame, guessHistory.some(guess => 
+      guess.name.toLowerCase() === targetGame.name.toLowerCase()
+    ));
+    
+    if (navigator.share) {
+      navigator.share({
+        text: shareText
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(shareText)
+        .then(() => setMessage("Results copied to clipboard!"))
+        .catch(() => setMessage("Failed to copy results"));
+    }
+  };
+
   return (
+    <div className="min-h-screen bg-gray-900">
     <div className="w-full max-w-2xl mx-auto p-6 bg-gray-900 text-white">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold mb-2">Boardle</h1>
@@ -266,6 +326,21 @@ const Boardle = () => {
         <div className="text-center text-xl font-bold mt-4">
           {message}
         </div>
+      )}
+      {gameOver && (
+        <>
+        <div className="text-center mb-4">
+            <img src={targetGame.imageUrl} alt={targetGame.name} className="w-full h-auto" />
+        </div>
+        <div className="text-center mt-4 mb-4">
+          <button
+            onClick={handleShare}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
+          >
+            Share Results
+          </button>
+        </div>
+        </>
       )}
 
       <div className="relative mb-6">
@@ -303,40 +378,41 @@ const Boardle = () => {
         )}
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {guessHistory.map((guess, index) => (
-          <div key={index} className="p-4 rounded-lg bg-gray-800">
-            <h3 className="text-xl font-bold mb-3">{guess.name}</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className={`p-3 rounded ${guess.year.match ? 'bg-green-600' : 'bg-yellow-500'}`}>
-                <div className="font-semibold">Year</div>
-                <div>{guess.year.value} {guess.year.message}</div>
+          <div key={index} className="p-2 rounded-lg bg-gray-800">
+            <h3 className="text-lg font-bold mb-2">{guess.name}</h3>
+            <div className="grid grid-cols-3 gap-2">
+              <div className={`p-2 rounded ${guess.year.match ? 'bg-green-600' : 'bg-yellow-500'}`}>
+                <div className="text-sm font-semibold">Year</div>
+                <div className="text-sm">{guess.year.value} {guess.year.message}</div>
               </div>
-              <div className={`p-3 rounded ${guess.weight.match ? 'bg-green-600' : 'bg-yellow-500'}`}>
-                <div className="font-semibold">Weight</div>
-                <div>{guess.weight.value} {guess.weight.message}</div>
+              <div className={`p-2 rounded ${guess.weight.match ? 'bg-green-600' : 'bg-yellow-500'}`}>
+                <div className="text-sm font-semibold">Weight</div>
+                <div className="text-sm">{guess.weight.value} {guess.weight.message}</div>
               </div>
-              <div className={`p-3 rounded ${guess.rank.match ? 'bg-green-600' : 'bg-yellow-500'}`}>
-                <div className="font-semibold">Rank</div>
-                <div>#{guess.rank.value} {guess.rank.message}</div>
+              <div className={`p-2 rounded ${guess.rank.match ? 'bg-green-600' : 'bg-yellow-500'}`}>
+                <div className="text-sm font-semibold">Rank</div>
+                <div className="text-sm">#{guess.rank.value} {guess.rank.message}</div>
               </div>
-              <div className={`p-3 rounded ${guess.maxPlayers.match ? 'bg-green-600' : 'bg-yellow-500'}`}>
-                <div className="font-semibold">Max Players</div>
-                <div>{guess.maxPlayers.value} {guess.maxPlayers.message}</div>
+              <div className={`p-2 rounded ${guess.maxPlayers.match ? 'bg-green-600' : 'bg-yellow-500'}`}>
+                <div className="text-sm font-semibold">Max Players</div>
+                <div className="text-sm">{guess.maxPlayers.value} {guess.maxPlayers.message}</div>
               </div>
-              <div className={`p-3 rounded ${guess.playTime.match ? 'bg-green-600' : 'bg-yellow-500'}`}>
-                <div className="font-semibold">Play Time</div>
-                <div>{guess.playTime.value} min {guess.playTime.message}</div>
+              <div className={`p-2 rounded ${guess.playTime.match ? 'bg-green-600' : 'bg-yellow-500'}`}>
+                <div className="text-sm font-semibold">Play Time</div>
+                <div className="text-sm">{guess.playTime.value} min {guess.playTime.message}</div>
               </div>
-              <div className={`p-3 rounded ${guess.category.match ? 'bg-green-600' : 'bg-gray-500'}`}>
-                <div className="font-semibold">Category</div>
-                <div>{guess.category.value} {guess.category.message}</div>
+              <div className={`p-2 rounded ${guess.category.match ? 'bg-green-600' : 'bg-gray-500'}`}>
+                <div className="text-sm font-semibold">Category</div>
+                <div className="text-sm">{guess.category.value} {guess.category.message}</div>
               </div>
             </div>
           </div>
         ))}
       </div>
 
+    </div>
     </div>
   );
 };
