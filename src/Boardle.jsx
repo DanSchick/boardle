@@ -2,6 +2,40 @@ import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { parse } from 'papaparse';
 
+
+const MechanicsHintCard = ({ matchingMechanics }) => {
+  if (!matchingMechanics || matchingMechanics.length === 0) {
+    return (
+      <div className="col-span-3 p-2 rounded bg-gray-800">
+        <div className="text-sm">
+          <div className="font-semibold">Mechanics</div>
+          <div>No matching mechanics</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="col-span-3 p-2 rounded bg-green-600 text-center">
+      <div className="text-sm">
+        <div className="font-semibold">Shared Mechanics</div>
+        <div className="flex flex-wrap gap-1 mt-1 justify-center">
+          {matchingMechanics.map((mechanic, index) => (
+            <div 
+              key={index} 
+              variant="secondary"
+              className="px-2 py-1 rounded bg-green-700 text-white text-xs inline-block"
+            >
+              {mechanic}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const Boardle = () => {
   const [currentGuess, setCurrentGuess] = useState('');
   const [guessNumber, setGuessNumber] = useState(1);
@@ -12,6 +46,7 @@ const Boardle = () => {
   const [gameOver, setGameOver] = useState(false);
   const [gamesDb, setGamesDb] = useState({});
   const [targetGame, setTargetGame] = useState(null);
+  const [matchingMechanics, setMatchingMechanics] = useState(null)
   
   
   const getDateSeed = () => {
@@ -28,7 +63,7 @@ const Boardle = () => {
   useEffect(() => {
     const fetchGamesData = async () => {
       console.log("Fetching games data")
-      const response = await fetch('/boardle/games.csv');
+      const response = await fetch('/games_with_mechanics.csv');
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -43,7 +78,8 @@ const Boardle = () => {
           maxPlayers: game.maxPlayers,
           playTime: game.playingtime,
           category: game.category,
-          imageUrl: game.imagePath
+          imageUrl: game.imagePath,
+          mechanics: game.mechanics
         };
         return acc;
       }, {});
@@ -60,6 +96,18 @@ const Boardle = () => {
 
     fetchGamesData();
   }, []);
+
+  const getMatchingMechanics = (guessName) => {
+    const guessGame = gamesDb[guessName];
+    if (!guessGame?.mechanics || !targetGame?.mechanics) return [];
+    
+    const guessMechanics = guessGame.mechanics.split('|');
+    const targetMechanics = targetGame.mechanics.split('|');
+    
+    return guessMechanics.filter(mechanic => 
+      targetMechanics.includes(mechanic)
+    );
+  };
 
   const fuzzyMatch = (str, pattern) => {
     str = str.toLowerCase();
@@ -218,6 +266,9 @@ const Boardle = () => {
 
     const [gameName, guessedGame] = gameEntry;
 
+    const mechanics = getMatchingMechanics(gameName);
+    setMatchingMechanics(mechanics);
+
     const yearComparison = compareYears(guessedGame.year, targetGame.year);
     const weightComparison = compareWeight(guessedGame.weight, targetGame.weight);
     const rankComparison = compareRank(guessedGame.rank, targetGame.rank);
@@ -227,6 +278,7 @@ const Boardle = () => {
     
     const newGuess = {
       name: gameName,
+      mechanics: mechanics,
       year: {
         value: guessedGame.year,
         match: yearComparison.match,
@@ -407,6 +459,7 @@ const Boardle = () => {
                 <div className="text-sm font-semibold">Category</div>
                 <div className="text-sm">{guess.category.value} {guess.category.message}</div>
               </div>
+              <MechanicsHintCard matchingMechanics={guess.mechanics} />
             </div>
           </div>
         ))}
