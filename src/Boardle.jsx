@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { parse } from 'papaparse';
 
-
 const Boardle = () => {
   const [currentGuess, setCurrentGuess] = useState('');
   const [guessNumber, setGuessNumber] = useState(1);
@@ -31,6 +30,7 @@ const Boardle = () => {
           rank: game.rank,
           maxPlayers: game.maxPlayers,
           playTime: game.playingtime,
+          category: game.category // Make sure this column exists in your CSV
         };
         return acc;
       }, {});
@@ -43,7 +43,6 @@ const Boardle = () => {
 
     fetchGamesData();
   }, []);
-  
 
   const fuzzyMatch = (str, pattern) => {
     str = str.toLowerCase();
@@ -100,12 +99,12 @@ const Boardle = () => {
     if (diff <= 5) {
       return {
         match: false,
-        message: guessYear < targetYear ? '↑ Within 5 years' : '↓ Within 5 years'
+        message: guessYear < targetYear ? '↑' : '↓'
       };
     }
     return {
       match: false,
-      message: guessYear < targetYear ? '↑ Over 5 years newer' : '↓ Over 5 years older'
+      message: guessYear < targetYear ? '↑↑' : '↓↓'
     };
   };
 
@@ -113,7 +112,7 @@ const Boardle = () => {
     if (Math.abs(guessWeight - targetWeight) < 0.3) return { match: true, message: '' };
     return {
       match: false,
-      message: guessWeight < targetWeight ? '↑ More Complex' : '↓ Less Complex'
+      message: guessWeight < targetWeight ? '↑' : '↓'
     };
   };
 
@@ -122,12 +121,12 @@ const Boardle = () => {
     if (Math.abs(guessRank - targetRank) <= 10) {
       return {
         match: false,
-        message: guessRank < targetRank ? '↑ Ranked Lower' : '↓ Ranked Higher'
+        message: guessRank < targetRank ? '↑' : '↓'
       };
     }
     return {
       match: false,
-      message: guessRank < targetRank ? '↑ Much Lower' : '↓ Much Higher'
+      message: guessRank < targetRank ? '↑↑' : '↓↓'
     };
   };
 
@@ -135,8 +134,30 @@ const Boardle = () => {
     if (guessPlayers === targetPlayers) return { match: true, message: '' };
     return {
       match: false,
-      message: guessPlayers < targetPlayers ? '↑ More players' : '↓ Fewer players'
+      message: guessPlayers < targetPlayers ? '↑' : '↓'
     };
+  };
+
+  const comparePlayTime = (guessTime, targetTime) => {
+    if (guessTime === targetTime) return { match: true, message: '' };
+    const diff = Math.abs(guessTime - targetTime);
+    if (diff <= 15) {
+      return {
+        match: false,
+        message: guessTime < targetTime ? '↑' : '↓'
+      };
+    }
+    return {
+      match: false,
+      message: guessTime < targetTime ? '↑↑' : '↓↓'
+    };
+  };
+
+  const compareCategory = (guessCategory, targetCategory) => {
+    if (guessCategory.toLowerCase() === targetCategory.toLowerCase()) {
+      return { match: true, message: '' };
+    }
+    return { match: false, message: '' };
   };
 
   const handleKeyDown = (e) => {
@@ -184,6 +205,8 @@ const Boardle = () => {
     const weightComparison = compareWeight(guessedGame.weight, targetGame.weight);
     const rankComparison = compareRank(guessedGame.rank, targetGame.rank);
     const playerComparison = compareMaxPlayers(guessedGame.maxPlayers, targetGame.maxPlayers);
+    const playTimeComparison = comparePlayTime(guessedGame.playTime, targetGame.playTime);
+    const categoryComparison = compareCategory(guessedGame.category, targetGame.category);
     
     const newGuess = {
       name: gameName,
@@ -206,6 +229,16 @@ const Boardle = () => {
         value: Number(guessedGame.maxPlayers),
         match: playerComparison.match,
         message: playerComparison.message
+      },
+      playTime: {
+        value: Number(guessedGame.playTime),
+        match: playTimeComparison.match,
+        message: playTimeComparison.message
+      },
+      category: {
+        value: guessedGame.category,
+        match: categoryComparison.match,
+        message: categoryComparison.message
       }
     };
 
@@ -217,7 +250,7 @@ const Boardle = () => {
     if (gameName.toLowerCase() === targetGame.name.toLowerCase()) {
       setMessage("Congratulations! You've found the game!");
       setGameOver(true);
-    } else if (guessNumber >= 5) {  // Check for game over before incrementing
+    } else if (guessNumber >= 5) {
       setMessage(`Game Over! The answer was ${targetGame.name}`);
       setGameOver(true);
     }
@@ -229,6 +262,11 @@ const Boardle = () => {
         <h1 className="text-4xl font-bold mb-2">Boardle</h1>
         <p className="text-gray-400">Guess {guessNumber} of 6</p>
       </div>
+      {message && (
+        <div className="text-center text-xl font-bold mt-4">
+          {message}
+        </div>
+      )}
 
       <div className="relative mb-6">
         <input
@@ -286,16 +324,19 @@ const Boardle = () => {
                 <div className="font-semibold">Max Players</div>
                 <div>{guess.maxPlayers.value} {guess.maxPlayers.message}</div>
               </div>
+              <div className={`p-3 rounded ${guess.playTime.match ? 'bg-green-600' : 'bg-yellow-500'}`}>
+                <div className="font-semibold">Play Time</div>
+                <div>{guess.playTime.value} min {guess.playTime.message}</div>
+              </div>
+              <div className={`p-3 rounded ${guess.category.match ? 'bg-green-600' : 'bg-gray-500'}`}>
+                <div className="font-semibold">Category</div>
+                <div>{guess.category.value} {guess.category.message}</div>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {message && (
-        <div className="text-center text-xl font-bold mt-4">
-          {message}
-        </div>
-      )}
     </div>
   );
 };
