@@ -334,14 +334,18 @@ const Boardle = () => {
     };
     
     const guessEmojis = guessHistory.map(guess => {
-      return [
+      // Create an array for regular attributes
+      const attributeEmojis = [
         guess.year.match ? '🟩' : '🟨',
         guess.weight.match ? '🟩' : '🟨',
         guess.rank.match ? '🟩' : '🟨',
         guess.maxPlayers.match ? '🟩' : '🟨',
         guess.playTime.match ? '🟩' : '🟨',
-        guess.category.match ? '🟩' : '🟨'
-      ].join('');
+        guess.category.match ? '🟩' : '🟨',
+        guess.mechanics?.length > 0 ? '🟨' : '⬛'
+      ];
+
+      return attributeEmojis.join('');
     });
   
     const header = `Boardle - ${won ? totalGuesses : 'X'}/6\n\n`;
