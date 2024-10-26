@@ -28,7 +28,7 @@ const Boardle = () => {
   useEffect(() => {
     const fetchGamesData = async () => {
       console.log("Fetching games data")
-      const response = await fetch('/games.csv');
+      const response = await fetch('/boardle/games.csv');
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
