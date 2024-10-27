@@ -18,7 +18,7 @@ const MechanicsHintCard = ({ matchingMechanics, isCorrect }) => {
   return (
     <div className={`col-span-3 p-2 rounded ${isCorrect ? 'bg-green-600' : 'bg-yellow-500'} text-center`}>
       <div className="text-sm">
-        <div className="font-semibold">Mechanics</div>
+        <div className="font-semibold">Shared Mechanics with Target Game</div>
         <div className="flex flex-wrap gap-1 mt-1 justify-center">
           {matchingMechanics.map((mechanic, index) => (
             <div 
