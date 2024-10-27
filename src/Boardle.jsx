@@ -318,12 +318,12 @@ const Boardle = () => {
     if (gameName.toLowerCase() === targetGame.name.toLowerCase()) {
       setMessage("Congratulations! You've found the game!");
       setGameOver(true);
-    }  else if (guessNumber >=5 ) {
+    } else if (guessNumber >=5 ) {
       console.log(targetGame)
       const firstLetter = targetGame.name.charAt(0)
       setMessage(`The first letter is ${firstLetter}`)
     }
-    else if (guessNumber >= 11) {
+    if (guessNumber >= 9) {
       setMessage(`Game Over! The answer was ${targetGame.name}`);
       setGameOver(true);
     }
