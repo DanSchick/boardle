@@ -318,7 +318,12 @@ const Boardle = () => {
     if (gameName.toLowerCase() === targetGame.name.toLowerCase()) {
       setMessage("Congratulations! You've found the game!");
       setGameOver(true);
-    } else if (guessNumber >= 5) {
+    }  else if (guessNumber >=5 ) {
+      console.log(targetGame)
+      const firstLetter = targetGame.name.charAt(0)
+      setMessage(`The first letter is ${firstLetter}`)
+    }
+    else if (guessNumber >= 11) {
       setMessage(`Game Over! The answer was ${targetGame.name}`);
       setGameOver(true);
     }
@@ -332,7 +337,7 @@ const Boardle = () => {
       wrong: '⬛'
     };
     
-    const guessEmojis = guessHistory.map(guess => {
+    const guessEmojis = [...guessHistory].reverse().map(guess => {
       // Create an array for regular attributes
       const isCorrectGuess = guess.name.toLowerCase() === targetGame.name.toLowerCase();
       const attributeEmojis = [
@@ -348,7 +353,7 @@ const Boardle = () => {
       return attributeEmojis.join('');
     });
   
-    const header = `Boardle - ${won ? totalGuesses : 'X'}/6\n\n`;
+    const header = `Boardle - ${won ? totalGuesses : 'X'}/10\n\n`;
     const guessLines = guessEmojis.join('\n');
     
     return header + guessLines;
@@ -376,7 +381,7 @@ const Boardle = () => {
     <div className="w-full max-w-2xl mx-auto p-6 bg-gray-900 text-white">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold mb-2">Boardle</h1>
-        <p className="text-gray-400">Guess {guessNumber} of 6</p>
+        <p className="text-gray-400">Guess {guessNumber} of 10</p>
       </div>
       {message && (
         <div className="text-center text-xl font-bold mt-4">
