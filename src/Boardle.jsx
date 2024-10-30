@@ -34,6 +34,17 @@ const MechanicsHintCard = ({ matchingMechanics, isCorrect }) => {
   );
 };
 
+const ExtraHint = ({targetGame, showHint, setShowHint}) => {
+  const firstLetter = targetGame?.name?.charAt(0)
+  if(!showHint) {
+    return <button 
+      onClick={() => setShowHint(true)}
+      className="px-2 py-1 mb-4 rounded bg-blue-500 hover:bg-gray-600 text-white text-sm font-semibold transition-colors"
+    >Show Extra Hint</button>
+  }
+  return firstLetter && <div className="text-center text-xl font-bold mt-4 mb-4">First letter: {firstLetter}</div>
+}
+
 
 const Boardle = () => {
   const [currentGuess, setCurrentGuess] = useState('');
@@ -46,6 +57,8 @@ const Boardle = () => {
   const [gamesDb, setGamesDb] = useState({});
   const [targetGame, setTargetGame] = useState(null);
   const [matchingMechanics, setMatchingMechanics] = useState(null)
+  const [hintAvailable, setHintAvailable] = useState(false)
+  const [showExtraHint, setShowExtraHint] = useState(false)
   
   
   const getDateSeed = () => {
@@ -320,10 +333,9 @@ const Boardle = () => {
       setGameOver(true);
     } else if (guessNumber >=5 ) {
       console.log(targetGame)
-      const firstLetter = targetGame.name.charAt(0)
-      setMessage(`The first letter is ${firstLetter}`)
+      setHintAvailable(true)
     }
-    if (guessNumber >= 9) {
+    if (guessNumber >= 10) {
       setMessage(`Game Over! The answer was ${targetGame.name}`);
       setGameOver(true);
     }
@@ -353,10 +365,11 @@ const Boardle = () => {
       return attributeEmojis.join('');
     });
   
-    const header = `Boardle - ${won ? totalGuesses : 'X'}/10\n\n`;
+    const header = `Boardle - ${won ? totalGuesses : 'X'}/10\n`;
+    const hintLine = `Hint used? ${showExtraHint ? 'Yes 👶' : 'No 😎'}\n\n`
     const guessLines = guessEmojis.join('\n');
     
-    return header + guessLines;
+    return header + hintLine + guessLines;
   };
   
   // Add this function to handle sharing
@@ -402,6 +415,11 @@ const Boardle = () => {
           </button>
         </div>
         </>
+      )}
+      {hintAvailable && (
+        <div className="text-center text-xl font-bold-mt-4">
+          <ExtraHint targetGame={targetGame} showHint={showExtraHint} setShowHint={setShowExtraHint}/>
+        </div>
       )}
 
       <div className="relative mb-6">
