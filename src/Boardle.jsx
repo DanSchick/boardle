@@ -72,6 +72,14 @@ const Boardle = () => {
     return daysSinceStart;
   };
 
+  const getDaysSinceInception = () => {
+    const pastDate = new Date('2024-10-25');
+    const currentDate = new Date();
+    const diffTime = Math.abs(currentDate - pastDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays
+  }
+
   useEffect(() => {
     const fetchGamesData = async () => {
       console.log("Fetching games data")
@@ -364,9 +372,10 @@ const Boardle = () => {
 
       return attributeEmojis.join('');
     });
+    
   
-    const header = `Boardle - ${won ? totalGuesses : 'X'}/10\n`;
-    const hintLine = `Hint used? ${showExtraHint ? 'Yes 👶' : 'No 😎'}\n\n`
+    const header = `Boardle ${getDaysSinceInception()} - ${won ? totalGuesses : 'X'}/10\n`;
+    const hintLine = `Hint used? ${showExtraHint ? 'Yes 👶' : 'No 🗿'}`
     const guessLines = guessEmojis.join('\n');
     
     return header + hintLine + guessLines;
