@@ -59,6 +59,14 @@ const Boardle = () => {
   const [matchingMechanics, setMatchingMechanics] = useState(null)
   const [hintAvailable, setHintAvailable] = useState(false)
   const [showExtraHint, setShowExtraHint] = useState(false)
+
+  const getDaysSinceInception = () => {
+    const pastDate = new Date('2024-10-25');
+    const currentDate = new Date();
+    const diffTime = Math.abs(currentDate - pastDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays
+  }
   
   
   const getDateSeed = () => {
@@ -68,28 +76,46 @@ const Boardle = () => {
     const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
     const daysSinceStart = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
     
-    
-    return daysSinceStart;
+    // Use a prime multiplier to get better distribution
+    return daysSinceStart * 2147483647;
   };
-
-  const getDaysSinceInception = () => {
-    const pastDate = new Date('2024-10-25');
-    const currentDate = new Date();
-    const diffTime = Math.abs(currentDate - pastDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays
-  }
-
+  
+  // Seeded random number generator
+  const seededRandom = (seed) => {
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+  };
+  
+  // Fisher-Yates shuffle with seeded randomness
+  const seededShuffle = (array, seed) => {
+    const shuffled = [...array];
+    let currentIndex = shuffled.length;
+    let temporaryValue, randomIndex;
+  
+    // While there remain elements to shuffle
+    while (currentIndex !== 0) {
+      // Pick a remaining element
+      randomIndex = Math.floor(seededRandom(seed + currentIndex) * currentIndex);
+      currentIndex -= 1;
+  
+      // Swap it with the current element
+      temporaryValue = shuffled[currentIndex];
+      shuffled[currentIndex] = shuffled[randomIndex];
+      shuffled[randomIndex] = temporaryValue;
+    }
+  
+    return shuffled;
+  };
+  
   useEffect(() => {
     const fetchGamesData = async () => {
-      console.log("Fetching games data")
+      console.log("Fetching games data");
       const response = await fetch('/games_with_mechanics.csv');
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
       const csvText = await response.text();
       const { data: gamesData } = parse(csvText, { header: true });
-
       const gamesDB = gamesData.reduce((acc, game) => {
         acc[game.name] = {
           year: game.year,
@@ -103,17 +129,20 @@ const Boardle = () => {
         };
         return acc;
       }, {});
-
+      
       const games = Object.entries(gamesDB);
-      const sortedGames = games.sort(([, a], [, b]) => a.rank - b.rank);
-      const dayIndex = Math.abs(getDateSeed()) % sortedGames.length;
-      console.log("Using index:", dayIndex, "out of", sortedGames.length);
-
-      const [name, data] = sortedGames[dayIndex];
+      const seed = getDateSeed();
+      
+      // Shuffle the array using the seed
+      const shuffledGames = seededShuffle(games, seed);
+      
+      // Always take the first game from the shuffled array
+      const [name, data] = shuffledGames[0];
+      
+      console.log("Selected game:", name);
       setTargetGame({ name, ...data });
       setGamesDb(gamesDB);
     };
-
     fetchGamesData();
   }, []);
 
@@ -375,7 +404,7 @@ const Boardle = () => {
     
   
     const header = `Boardle ${getDaysSinceInception()} - ${won ? totalGuesses : 'X'}/10\n`;
-    const hintLine = `Hint used? ${showExtraHint ? 'Yes 👶' : 'No 🗿'}`
+    const hintLine = `Hint used? ${showExtraHint ? 'Yes 👶\n\n' : 'No 🗿\n\n'}`
     const guessLines = guessEmojis.join('\n');
     
     return header + hintLine + guessLines;
